@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ESP32 Smart Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h2>ESP32 Smart Dashboard</h2>
+
+  <h3>Temperature</h3>
+  <div class="gauge">
+    <div id="needle" class="needle"></div>
+  </div>
+  <div id="tempValue">-- °C</div>
+
+  <h3>Motion Sensor</h3>
+  <div id="motionCircle" class="circle"></div>
+
+  <h3>Controls</h3>
+  <button class="button" onclick="toggleLED()">Toggle LED</button>
+  <button class="button" onclick="activateBuzzer()">Buzz</button>
+
+  <script src="script.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,52 @@
+body {
+  font-family: 'Segoe UI', sans-serif;
+  text-align: center;
+  background-color: #111;
+  color: #fff;
+  margin: 0;
+  padding: 0;
+}
+h2 { color: #0ff; margin-top: 20px; }
+.button {
+  padding: 10px 20px;
+  margin: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #0ff;
+  color: #111;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.button:hover { background: #09f; color: white; }
+.circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid #0ff;
+  margin: 20px auto;
+  background-color: transparent;
+  transition: background-color 0.3s;
+}
+.circle.active { background-color: #0f0; }
+.gauge {
+  width: 200px;
+  height: 100px;
+  background: #222;
+  border-radius: 100px 100px 0 0;
+  margin: 20px auto;
+  position: relative;
+}
+.needle {
+  width: 2px;
+  height: 90px;
+  background: #0ff;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform-origin: bottom center;
+  transform: rotate(-90deg);
+  transition: transform 0.5s;
+}
+#tempValue { margin-top: 10px; font-size: 20px; }
+
