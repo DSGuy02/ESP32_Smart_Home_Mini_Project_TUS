@@ -6,13 +6,23 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2>ESP32 Smart Dashboard</h2>
-
-  <h3>Temperature</h3>
-  <div class="gauge">
-    <div id="needle" class="needle"></div>
+  <div class="header">
+    <h2>ESP32 Smart Dashboard</h2>
+    <button id="themeToggle" class="theme-button" onclick="toggleTheme()">☀️</button>
   </div>
-  <div id="tempValue">-- °C</div>
+
+  <div class="gauges">
+    <div>
+      <h3>Temperature</h3>
+      <div class="gauge"><div id="tempNeedle" class="needle"></div></div>
+      <div id="tempValue">-- °C</div>
+    </div>
+    <div>
+      <h3>Humidity</h3>
+      <div class="gauge"><div id="humNeedle" class="needle"></div></div>
+      <div id="humValue">-- %</div>
+    </div>
+  </div>
 
   <h3>Motion Sensor</h3>
   <div id="motionCircle" class="circle"></div>
@@ -24,4 +34,3 @@
   <script src="script.js"></script>
 </body>
 </html>
-
