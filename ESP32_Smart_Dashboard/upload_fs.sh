@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
 # upload_fs.sh — Build and upload SPIFFS/LittleFS data for ESP32
 # Usage:
-#   ./upload_fs.sh
-#   ./upload_fs.sh --cleanup
-#   ./upload_fs.sh --usbport 0
-#   ./upload_fs.sh --checkacm
-#   ./upload_fs.sh --checkacm 1
-#   (can combine, e.g. ./upload_fs.sh --checkacm --cleanup)
+#   ./upload_fs.sh [--cleanup] [--usbport <num>] [--checkacm [<num>]]
 
 set -euo pipefail
 
@@ -45,7 +40,7 @@ while [[ $# -gt 0 ]]; do
         CHECKACM_ARG="$2"
         shift 2
       else
-        CHECKACM_ARG="true"  # flag only, no number
+        CHECKACM_ARG="true"
         shift
       fi
       ;;
@@ -84,12 +79,15 @@ if [ ! -x "$MKEXEC" ]; then
   echo "📦 Extracting..."
   mkdir -p "$MKDIR_TMP"
   tar -xzf "$MKTAR" -C "$MKDIR_TMP"
-  if [ -f "$MKDIR_TMP/mklittlefs/mklittlefs" ]; then
-    mv "$MKDIR_TMP/mklittlefs/mklittlefs" .
+
+  echo "🔍 Searching for mklittlefs binary..."
+  MKFOUND=$(find "$MKDIR_TMP" -type f -name "mklittlefs" | head -n 1 || true)
+  if [ -n "$MKFOUND" ]; then
+    mv "$MKFOUND" .
     chmod +x "$MKEXEC"
-    echo "✅ mklittlefs ready."
+    echo "✅ Found and prepared mklittlefs binary."
   else
-    echo "❌ Failed to extract mklittlefs binary!"
+    echo "❌ Could not find mklittlefs binary in extracted archive!"
     exit 1
   fi
 fi
