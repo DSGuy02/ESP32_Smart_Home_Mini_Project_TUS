@@ -12,6 +12,12 @@ set -euo pipefail
 
 VENV_DIR="venv"
 BIN_FILE="littlefs.bin"
+MOUNT_ADDR="0x290000"
+MKSRC_URL="https://github.com/earlephilhower/mklittlefs/releases/download/4.1.0/x86_64-linux-gnu-mklittlefs-42acb97.tar.gz"
+MKTAR="mklittlefs.tar.gz"
+MKDIR_TMP="mklittlefs"
+MKEXEC="./mklittlefs"
+
 CLEANUP=false
 PORT=""
 
@@ -71,6 +77,23 @@ fi
 
 echo "🔌 Using detected ESP32 port: $PORT"
 
+# --- Ensure mklittlefs exists, or download it ---
+if [ ! -x "$MKEXEC" ]; then
+  echo "📥 mklittlefs not found — downloading from GitHub..."
+  curl -L "$MKSRC_URL" -o "$MKTAR"
+  echo "📦 Extracting..."
+  mkdir -p "$MKDIR_TMP"
+  tar -xzf "$MKTAR" -C "$MKDIR_TMP"
+  if [ -f "$MKDIR_TMP/mklittlefs/mklittlefs" ]; then
+    mv "$MKDIR_TMP/mklittlefs/mklittlefs" .
+    chmod +x "$MKEXEC"
+    echo "✅ mklittlefs ready."
+  else
+    echo "❌ Failed to extract mklittlefs binary!"
+    exit 1
+  fi
+fi
+
 # --- Create venv if missing ---
 if [ ! -d "$VENV_DIR" ]; then
   echo "🧱 Creating Python virtual environment..."
@@ -96,33 +119,25 @@ else
   pip install esptool >/dev/null
 fi
 
-# --- Verify mklittlefs existence ---
-if [ ! -x "./mklittlefs" ]; then
-  echo "❌ Error: mklittlefs not found or not executable!"
-  echo "👉 Place mklittlefs in this directory and make it executable:"
-  echo "   chmod +x mklittlefs"
-  exit 1
-fi
-
 # --- Build LittleFS image ---
 echo "🗜️  Building LittleFS image..."
-./mklittlefs -c data -b 4096 -p 256 -s 0x150000 "$BIN_FILE"
+"$MKEXEC" -c data -b 4096 -p 256 -s 0x150000 "$BIN_FILE"
 echo "✅ Created: $BIN_FILE"
 
 # --- Flash to ESP32 ---
 echo "⚡ Flashing LittleFS to ESP32 on $PORT..."
-if esptool --chip esp32 --port "$PORT" write_flash 0x290000 "$BIN_FILE"; then
+if esptool --chip esp32 --port "$PORT" write_flash "$MOUNT_ADDR" "$BIN_FILE"; then
   echo "✅ Flash successful!"
 
   # --- Cleanup ---
   if [ "$CLEANUP" = true ]; then
     echo "🧹 Performing cleanup..."
-    rm -f "$BIN_FILE"
-    deactivate || true
+    rm -f "$BIN_FILE" "$MKTAR"
+    rm -rf "$MKDIR_TMP"
     rm -rf "$VENV_DIR"
-    echo "🧽 Deleted venv and binary."
+    echo "🧽 Deleted venv, binary, and downloaded files."
   else
-    echo "🧹 Keeping venv and $BIN_FILE (use --cleanup to remove)."
+    echo "🧹 Keeping venv and build artifacts (use --cleanup to remove)."
   fi
 else
   echo "❌ Flash failed — keeping $BIN_FILE for inspection."
@@ -130,4 +145,3 @@ else
 fi
 
 echo "🎯 Done!"
-
