@@ -15,11 +15,28 @@ MKEXEC="./mklittlefs"
 
 CLEANUP=false
 PORT=""
+UPLOAD_SUCCESS=false
 
-# --- Parse arguments ---
 USBPORT_ARG=""
 CHECKACM_ARG=""
 
+# --- Cleanup function (runs on exit if --cleanup was used) ---
+cleanup_on_exit() {
+  if [ "$CLEANUP" = true ]; then
+    echo "🧹 Performing cleanup (final)..."
+    rm -f "$MKTAR" 2>/dev/null || true
+    rm -rf "$MKDIR_TMP" 2>/dev/null || true
+    rm -rf "$VENV_DIR" 2>/dev/null || true
+    # Remove littlefs.bin only if upload succeeded
+    if [ "$UPLOAD_SUCCESS" = true ]; then
+      rm -f "$BIN_FILE" 2>/dev/null || true
+    fi
+    echo "🧽 Cleanup complete."
+  fi
+}
+trap cleanup_on_exit EXIT
+
+# --- Parse arguments ---
 while [[ $# -gt 0 ]]; do
   case $1 in
     --cleanup)
@@ -126,17 +143,7 @@ echo "✅ Created: $BIN_FILE"
 echo "⚡ Flashing LittleFS to ESP32 on $PORT..."
 if esptool --chip esp32 --port "$PORT" write_flash "$MOUNT_ADDR" "$BIN_FILE"; then
   echo "✅ Flash successful!"
-
-  # --- Cleanup ---
-  if [ "$CLEANUP" = true ]; then
-    echo "🧹 Performing cleanup..."
-    rm -f "$BIN_FILE" "$MKTAR"
-    rm -rf "$MKDIR_TMP"
-    rm -rf "$VENV_DIR"
-    echo "🧽 Deleted venv, binary, and downloaded files."
-  else
-    echo "🧹 Keeping venv and build artifacts (use --cleanup to remove)."
-  fi
+  UPLOAD_SUCCESS=true
 else
   echo "❌ Flash failed — keeping $BIN_FILE for inspection."
   exit 1
