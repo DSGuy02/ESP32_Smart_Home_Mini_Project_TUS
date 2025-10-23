@@ -10,8 +10,8 @@ BIN_FILE="littlefs.bin"
 MOUNT_ADDR="0x290000"
 MKSRC_URL="https://github.com/earlephilhower/mklittlefs/releases/download/4.1.0/x86_64-linux-gnu-mklittlefs-42acb97.tar.gz"
 MKTAR="mklittlefs.tar.gz"
-MKDIR_TMP="mklittlefs"
-MKEXEC="./mklittlefs"
+MKDIR_TMP="mklittlefs_extracted"
+MKEXEC="./mklittlefs_bin"   # renamed to avoid name conflict
 
 CLEANUP=false
 PORT=""
@@ -27,7 +27,6 @@ cleanup_on_exit() {
     rm -f "$MKTAR" 2>/dev/null || true
     rm -rf "$MKDIR_TMP" 2>/dev/null || true
     rm -rf "$VENV_DIR" 2>/dev/null || true
-    # Remove littlefs.bin only if upload succeeded
     if [ "$UPLOAD_SUCCESS" = true ]; then
       rm -f "$BIN_FILE" 2>/dev/null || true
     fi
@@ -91,22 +90,24 @@ echo "🔌 Using detected ESP32 port: $PORT"
 
 # --- Ensure mklittlefs exists, or download it ---
 if [ ! -x "$MKEXEC" ]; then
-  echo "📥 mklittlefs not found — downloading from GitHub..."
+  echo "📥 mklittlefs binary not found — downloading from GitHub..."
   curl -L "$MKSRC_URL" -o "$MKTAR"
-  echo "📦 Extracting..."
+  echo "📦 Extracting archive..."
   mkdir -p "$MKDIR_TMP"
   tar -xzf "$MKTAR" -C "$MKDIR_TMP"
 
-  echo "🔍 Searching for mklittlefs binary..."
+  echo "🔍 Searching for mklittlefs executable..."
   MKFOUND=$(find "$MKDIR_TMP" -type f -name "mklittlefs" | head -n 1 || true)
   if [ -n "$MKFOUND" ]; then
-    mv "$MKFOUND" .
+    echo "✅ Found mklittlefs at: $MKFOUND"
+    cp "$MKFOUND" "$MKEXEC"
     chmod +x "$MKEXEC"
-    echo "✅ Found and prepared mklittlefs binary."
   else
-    echo "❌ Could not find mklittlefs binary in extracted archive!"
+    echo "❌ Could not locate mklittlefs binary in extracted files!"
     exit 1
   fi
+else
+  echo "✅ Using existing mklittlefs binary: $MKEXEC"
 fi
 
 # --- Create venv if missing ---
