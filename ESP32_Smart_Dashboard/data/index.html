@@ -3,64 +3,70 @@
 <head>
   <meta charset="UTF-8">
   <title>ESP32 Smart Dashboard</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="header" id="header">
+  <header class="header">
     <h2>ESP32 Smart Dashboard</h2>
-    <div>
+    <div class="right-controls">
       <button id="themeToggle" class="theme-button" onclick="toggleTheme()">☀️</button>
     </div>
-  </div>
+  </header>
 
-  <div class="status-row">
-    <div class="status-card">
-      <h4>LED</h4>
-      <div id="ledIndicator" class="indicator off"></div>
-      <div id="ledText">Unknown</div>
-      <button class="button small" onclick="wsSend({cmd:'led'})">Toggle LED</button>
-    </div>
+  <main class="container">
+    <section class="top-row">
+      <div class="card gauge-card">
+        <h3>Temperature</h3>
+        <div class="gauge"><div id="tempNeedle" class="needle"></div></div>
+        <p id="tempValue">-- °C</p>
+      </div>
 
-    <div class="status-card">
-      <h4>Buzzer</h4>
-      <div id="buzzerIndicator" class="indicator off"></div>
-      <div id="buzzerText">Idle</div>
-    </div>
+      <div class="card gauge-card">
+        <h3>Humidity</h3>
+        <div class="gauge"><div id="humNeedle" class="needle"></div></div>
+        <p id="humValue">-- %</p>
+      </div>
+    </section>
 
-    <div class="status-card">
-      <h4>Dummy Mode</h4>
-      <div id="dummyIndicator" class="indicator off"></div>
-      <div id="dummyText">Hidden</div>
-    </div>
-  </div>
+    <section class="middle-row">
+      <div class="card motion-card">
+        <h3>Motion Sensor</h3>
+        <div id="motionCircle" class="circle" title="Click 5 times to toggle dummy mode"></div>
+        <p id="motionStatus">No motion</p>
+      </div>
 
-  <div class="gauges">
-    <div>
-      <h3>Temperature</h3>
-      <div class="gauge"><div id="tempNeedle" class="needle"></div></div>
-      <div id="tempValue">-- °C</div>
-    </div>
-    <div>
-      <h3>Humidity</h3>
-      <div class="gauge"><div id="humNeedle" class="needle"></div></div>
-      <div id="humValue">-- %</div>
-    </div>
-  </div>
+      <div class="card control-card">
+        <h3>Controls</h3>
+        <div class="control-item">
+          <div class="control-row">
+            <button class="button" id="ledToggleBtn">Toggle LED</button>
+            <div class="small-info" id="ledStatus">LED: OFF</div>
+          </div>
+          <div class="control-row">
+            <input id="ledDuration" class="duration-input" type="number" min="1" placeholder="seconds">
+            <button class="button" id="ledTimedBtn">LED for time</button>
+          </div>
+        </div>
 
-  <h3>Motion Sensor</h3>
-  <div id="motionCircle" class="circle"></div>
+        <div class="control-item">
+          <div class="control-row">
+            <button class="button" id="buzzBtn">Buzz</button>
+            <div class="small-info" id="buzzerStatus">Buzzer: OFF</div>
+          </div>
+          <div class="control-row">
+            <input id="freqInput" class="small-input" type="number" min="37" max="20000" value="1000">
+            <input id="durInput" class="small-input" type="number" min="10" max="60000" value="500">
+            <button class="button" id="buzzCustomBtn">Buzz (custom)</button>
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <h3>Controls</h3>
-  <div class="controls">
-    <button class="button" onclick="wsSend({cmd:'led'})">Toggle LED (WS)</button>
-    <button class="button" onclick="buzzFromForm()">Buzz (WS)</button>
-  </div>
-
-  <div class="buzzer-form">
-    <label>Frequency (Hz): <input id="freqInput" type="number" value="1000"></label>
-    <label>Duration (ms): <input id="durInput" type="number" value="500"></label>
-    <button class="button small" onclick="buzzREST()">Buzz (REST)</button>
-  </div>
+    <footer class="footer-note">
+      <small>Hidden: click the motion circle 5 times quickly to toggle simulated (dummy) sensor readings.</small>
+    </footer>
+  </main>
 
   <script src="script.js"></script>
 </body>

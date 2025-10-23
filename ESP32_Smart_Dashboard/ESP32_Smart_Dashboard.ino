@@ -25,11 +25,24 @@ bool motionDetected = false;
 
 // State tracking
 bool ledState = false;
+unsigned long ledEnd = 0;
+
 bool buzzerPlaying = false;
 unsigned long buzzerEnd = 0;
 int buzzerFreq = 1000;
 int buzzerDur = 500;
+
 bool dummyMode = false;
+
+// --- Helpers ---
+void flashLedImmediate(int times, int msDelay) {
+  for (int i = 0; i < times; ++i) {
+    digitalWrite(LED_PIN, HIGH);
+    delay(msDelay);
+    digitalWrite(LED_PIN, LOW);
+    delay(msDelay);
+  }
+}
 
 // --- Send JSON data to all connected WebSocket clients ---
 void broadcastData() {
@@ -38,7 +51,7 @@ void broadcastData() {
   json += "\"humidity\":" + String(humidity, 1) + ",";
   json += "\"motion\":" + String(motionDetected ? 1 : 0) + ",";
   json += "\"led\":" + String(ledState ? 1 : 0) + ",";
-  json += "\"buzzerPlaying\":" + String(buzzerPlaying ? 1 : 0) + ",";
+  json += "\"buzzer\":" + String(buzzerPlaying ? 1 : 0) + ",";
   json += "\"buzzerFreq\":" + String(buzzerFreq) + ",";
   json += "\"buzzerDur\":" + String(buzzerDur) + ",";
   json += "\"dummyMode\":" + String(dummyMode ? 1 : 0);
@@ -55,15 +68,40 @@ void onWebSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t leng
     String msg = String((char*)payload);
     Serial.printf("WS message: %s\n", msg.c_str());
     if (msg.indexOf("\"cmd\":\"led\"") >= 0) {
-      ledState = !ledState;
-      digitalWrite(LED_PIN, ledState ? HIGH : LOW);
+      int idxTime = msg.indexOf("\"time\":");
+      if (idxTime >= 0) {
+        int idxComma = msg.indexOf(",", idxTime);
+        String s = msg.substring(idxTime+7, idxComma>0?idxComma:msg.length());
+        int seconds = s.toInt();
+        flashLedImmediate(3, 80);
+        ledState = true;
+        digitalWrite(LED_PIN, HIGH);
+        ledEnd = millis() + (unsigned long)seconds * 1000UL;
+      } else if (msg.indexOf("\"state\":1") >= 0) {
+        ledState = true;
+        digitalWrite(LED_PIN, HIGH);
+      } else if (msg.indexOf("\"state\":0") >= 0) {
+        ledState = false;
+        digitalWrite(LED_PIN, LOW);
+      } else {
+        ledState = !ledState;
+        digitalWrite(LED_PIN, ledState ? HIGH : LOW);
+      }
       broadcastData();
     } else if (msg.indexOf("\"cmd\":\"buzz\"") >= 0) {
       int f = -1; long d = -1;
       int idxF = msg.indexOf("\"freq\":");
-      if (idxF >= 0) f = msg.substring(idxF + 7).toInt();
+      if (idxF >= 0) {
+        int idxComma = msg.indexOf(",", idxF);
+        String s = msg.substring(idxF+7, idxComma>0?idxComma:msg.length());
+        f = s.toInt();
+      }
       int idxD = msg.indexOf("\"dur\":");
-      if (idxD >= 0) d = msg.substring(idxD + 6).toInt();
+      if (idxD >= 0) {
+        int idxComma = msg.indexOf(",", idxD);
+        String s = msg.substring(idxD+6, idxComma>0?idxComma:msg.length());
+        d = s.toInt();
+      }
       if (f > 0) buzzerFreq = f;
       if (d > 0) buzzerDur = d;
       tone(BUZZER_PIN, buzzerFreq, buzzerDur);
@@ -78,10 +116,20 @@ void onWebSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t leng
   }
 }
 
+// --- API Handlers ---
 void handleLED() {
-  ledState = !ledState;
-  digitalWrite(LED_PIN, ledState ? HIGH : LOW);
-  server.send(200, "application/json", String("{\"led\":") + (ledState? "1":"0") + "}");
+  if (server.hasArg("time")) {
+    int seconds = server.arg("time").toInt();
+    flashLedImmediate(3, 80);
+    ledState = true;
+    digitalWrite(LED_PIN, HIGH);
+    ledEnd = millis() + (unsigned long)seconds * 1000UL;
+    server.send(200, "application/json", String("{\"led\":1,\"time\":") + String(seconds) + "}");
+  } else {
+    ledState = !ledState;
+    digitalWrite(LED_PIN, ledState ? HIGH : LOW);
+    server.send(200, "application/json", String("{\"led\":") + (ledState? "1":"0") + "}");
+  }
   broadcastData();
 }
 
@@ -101,7 +149,7 @@ void handleStatus() {
   json += "\"humidity\":" + String(humidity, 1) + ",";
   json += "\"motion\":" + String(motionDetected ? 1 : 0) + ",";
   json += "\"led\":" + String(ledState ? 1 : 0) + ",";
-  json += "\"buzzerPlaying\":" + String(buzzerPlaying ? 1 : 0) + ",";
+  json += "\"buzzer\":" + String(buzzerPlaying ? 1 : 0) + ",";
   json += "\"buzzerFreq\":" + String(buzzerFreq) + ",";
   json += "\"buzzerDur\":" + String(buzzerDur) + ",";
   json += "\"dummyMode\":" + String(dummyMode ? 1 : 0);
@@ -138,7 +186,7 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("\nConnected!");
+  Serial.println("\\nConnected!");
   Serial.print("ESP32 IP Address: ");
   Serial.println(WiFi.localIP());
 
@@ -166,10 +214,11 @@ void loop() {
   if (now - lastRead > 2000) {
     lastRead = now;
     if (dummyMode) {
-      float t = (now / 1000.0);
-      temperature = 20.0 + 5.0 * sin(t / 30.0);
-      humidity = 40.0 + 20.0 * cos(t / 45.0);
-      motionDetected = (int)(sin(t / 10.0) > 0.6); // dummy motion pulses
+      float t = now / 1000.0;
+      temperature = 21.0 + 3.0 * sin(t / 25.0) + (random(-50,50)/100.0);
+      humidity = 45.0 + 12.0 * cos(t / 40.0) + (random(-30,30)/100.0);
+      float mval = sin(t / 7.0) + (random(-100,100)/100.0);
+      motionDetected = (mval > 0.7);
     } else {
       temperature = dht.readTemperature();
       humidity = dht.readHumidity();
@@ -180,6 +229,13 @@ void loop() {
 
   if (buzzerPlaying && millis() > buzzerEnd) {
     buzzerPlaying = false;
+    broadcastData();
+  }
+
+  if (ledState && ledEnd != 0 && millis() > ledEnd) {
+    ledState = false;
+    digitalWrite(LED_PIN, LOW);
+    ledEnd = 0;
     broadcastData();
   }
 }
