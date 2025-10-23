@@ -6,9 +6,32 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="header">
+  <div class="header" id="header">
     <h2>ESP32 Smart Dashboard</h2>
-    <button id="themeToggle" class="theme-button" onclick="toggleTheme()">☀️</button>
+    <div>
+      <button id="themeToggle" class="theme-button" onclick="toggleTheme()">☀️</button>
+    </div>
+  </div>
+
+  <div class="status-row">
+    <div class="status-card">
+      <h4>LED</h4>
+      <div id="ledIndicator" class="indicator off"></div>
+      <div id="ledText">Unknown</div>
+      <button class="button small" onclick="wsSend({cmd:'led'})">Toggle LED (WS)</button>
+    </div>
+
+    <div class="status-card">
+      <h4>Buzzer</h4>
+      <div id="buzzerIndicator" class="indicator off"></div>
+      <div id="buzzerText">Idle</div>
+    </div>
+
+    <div class="status-card">
+      <h4>Dummy Mode</h4>
+      <div id="dummyIndicator" class="indicator off"></div>
+      <div id="dummyText">Hidden</div>
+    </div>
   </div>
 
   <div class="gauges">
@@ -28,8 +51,16 @@
   <div id="motionCircle" class="circle"></div>
 
   <h3>Controls</h3>
-  <button class="button" onclick="toggleLED()">Toggle LED</button>
-  <button class="button" onclick="activateBuzzer()">Buzz</button>
+  <div class="controls">
+    <button class="button" onclick="wsSend({cmd:'led'})">Toggle LED (WS)</button>
+    <button class="button" onclick="buzzFromForm()">Buzz (WS)</button>
+  </div>
+
+  <div class="buzzer-form">
+    <label>Frequency (Hz): <input id="freqInput" type="number" value="1000" min="37" max="20000"></label>
+    <label>Duration (ms): <input id="durInput" type="number" value="500" min="10" max="60000"></label>
+    <button class="button small" onclick="buzzREST()">Buzz (REST)</button>
+  </div>
 
   <script src="script.js"></script>
 </body>
